@@ -1,0 +1,166 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: 'Inter', system-ui, sans-serif;
+    background: #020617;
+    color: #f8fafc;
+    min-height: 100vh;
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #0f172a;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 3px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl;
+  }
+
+  .glass-card-hover {
+    @apply glass-card transition-all duration-300 hover:bg-white/10 hover:border-white/20 hover:shadow-lg hover:shadow-primary-500/5;
+  }
+
+  .gradient-text {
+    @apply bg-gradient-to-r from-primary-400 via-primary-300 to-accent-sky bg-clip-text text-transparent;
+  }
+
+  .gradient-border {
+    @apply relative;
+    background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(14, 165, 233, 0.1));
+    border: 1px solid transparent;
+    background-clip: padding-box;
+  }
+
+  .glow-effect {
+    box-shadow: 0 0 40px rgba(99, 102, 241, 0.15), 0 0 80px rgba(99, 102, 241, 0.05);
+  }
+
+  .stat-card {
+    @apply glass-card p-6 transition-all duration-300 hover:scale-[1.02] hover:glow-effect;
+  }
+
+  .nav-link {
+    @apply flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-surface-200/70 transition-all duration-200 hover:bg-white/5 hover:text-white;
+  }
+
+  .nav-link-active {
+    @apply bg-primary-500/10 text-primary-400 border border-primary-500/20;
+  }
+
+  .btn-primary {
+    @apply px-6 py-2.5 rounded-xl font-medium text-sm bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white shadow-lg shadow-primary-500/25 transition-all duration-300 hover:shadow-primary-500/40 active:scale-95;
+  }
+
+  .btn-secondary {
+    @apply px-6 py-2.5 rounded-xl font-medium text-sm bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-white transition-all duration-300 active:scale-95;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl text-sm bg-white/5 border border-white/10 text-white placeholder-white/30 focus:outline-none focus:border-primary-500/50 focus:ring-1 focus:ring-primary-500/25 transition-all duration-200;
+  }
+
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-emerald {
+    @apply badge bg-emerald-500/10 text-emerald-400 border border-emerald-500/20;
+  }
+
+  .badge-amber {
+    @apply badge bg-amber-500/10 text-amber-400 border border-amber-500/20;
+  }
+
+  .badge-rose {
+    @apply badge bg-rose-500/10 text-rose-400 border border-rose-500/20;
+  }
+
+  .badge-sky {
+    @apply badge bg-sky-500/10 text-sky-400 border border-sky-500/20;
+  }
+
+  .page-container {
+    @apply flex-1 p-6 lg:p-8 overflow-y-auto;
+  }
+
+  .page-header {
+    @apply mb-8;
+  }
+
+  .page-title {
+    @apply text-2xl lg:text-3xl font-bold;
+  }
+
+  .page-subtitle {
+    @apply text-surface-200/50 mt-1;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+@layer components {
+  .cmdk-dialog {
+    @apply fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex justify-center pt-[15vh] px-4;
+    animation: fadeIn 0.15s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: scale(0.98);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  [cmdk-root] {
+    @apply w-full max-w-2xl bg-surface-900/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden shadow-primary-500/10 flex flex-col mb-auto;
+  }
+
+  .cmdk-item {
+    @apply flex items-center px-4 py-3 text-sm text-surface-200 cursor-pointer rounded-xl transition-all select-none;
+  }
+
+  .cmdk-item[data-selected="true"] {
+    @apply bg-white/10 text-white border-white/5 border;
+  }
+
+  .cmdk-item[data-selected="true"] svg {
+    @apply text-white;
+  }
+
+  [cmdk-list] {
+    @apply outline-none;
+  }
+}

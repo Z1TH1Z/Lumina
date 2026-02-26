@@ -1,0 +1,34 @@
+# === Core Framework ===
+fastapi
+uvicorn[standard]
+python-multipart
+
+# === Database ===
+sqlalchemy[asyncio]
+aiosqlite
+# asyncpg      # uncomment for PostgreSQL
+# psycopg2-binary  # uncomment for PostgreSQL
+alembic
+
+# === Auth & Security ===
+python-jose[cryptography]
+passlib[bcrypt]
+pydantic[email]
+pydantic-settings
+
+# === Async Tasks ===
+celery
+redis
+
+# === HTTP Client ===
+httpx
+
+# === Document Processing ===
+pdfplumber
+PyMuPDF
+
+# === WebSocket ===
+websockets
+
+# === Logging ===
+python-json-logger

@@ -1,0 +1,234 @@
+"""ML service for transaction categorization, anomaly detection, and forecasting."""
+
+import pickle
+import json
+import numpy as np
+from typing import Tuple, List, Dict, Optional
+from decimal import Decimal
+from datetime import datetime
+from pathlib import Path
+from redis.asyncio import Redis
+
+from app.core.config import get_settings
+from app.core.constants import (
+    CATEGORIZATION_CONFIDENCE_THRESHOLD,
+    ANOMALY_ZSCORE_THRESHOLD,
+    FORECAST_MIN_MONTHS,
+)
+from app.models.transaction import Transaction
+from app.schemas.transaction import Anomaly, Forecast
+
+settings = get_settings()
+
+
+async def get_redis_client() -> Redis:
+    """Get Redis client for caching."""
+    return Redis.from_url(settings.REDIS_URL, decode_responses=True)
+
+
+class MLService:
+    """Service for ML-based operations."""
+
+    def __init__(self):
+        """Initialize ML service."""
+        self._categorizer_model = None
+        self._model_path = Path(settings.CATEGORIZER_MODEL_PATH)
+
+    def load_categorization_model(self):
+        """Load the transaction categorization model."""
+        if self._categorizer_model is None:
+            try:
+                with open(self._model_path, 'rb') as f:
+                    self._categorizer_model = pickle.load(f)
+                print(f"✅ Loaded categorization model from {self._model_path}")
+            except FileNotFoundError:
+                print(f"⚠️  Model not found at {self._model_path}")
+                print("   Run: python -m app.ml.train_categorizer")
+                self._categorizer_model = None
+        
+        return self._categorizer_model
+
+    def predict_category(
+        self,
+        description: str,
+        merchant: Optional[str] = None
+    ) -> Tuple[str, float]:
+        """
+        Predict transaction category using ML model.
+
+        Args:
+            description: Transaction description
+            merchant: Merchant name (optional)
+
+        Returns:
+            Tuple of (category, confidence_score)
+        """
+        model_data = self.load_categorization_model()
+        
+        if model_data is None:
+            # Fallback to 'other' if model not available
+            return "other", 0.0
+
+        # Combine description and merchant
+        text = f"{description} {merchant or ''}"
+        
+        # Vectorize
+        vectorizer = model_data['vectorizer']
+        X = vectorizer.transform([text])
+        
+        # Predict
+        model = model_data['model']
+        y_pred = model.predict(X)
+        y_proba = model.predict_proba(X)
+        
+        # Decode label
+        label_encoder = model_data['label_encoder']
+        category = label_encoder.inverse_transform(y_pred)[0]
+        confidence = float(np.max(y_proba))
+        
+        return category, confidence
+
+    def detect_anomalies(
+        self,
+        transactions: List[Transaction],
+        user_id: str
+    ) -> List[Anomaly]:
+        """
+        Detect anomalies in transactions using Z-score analysis.
+
+        Args:
+            transactions: List of transactions to analyze
+            user_id: User ID
+
+        Returns:
+            List of detected anomalies
+        """
+        if not transactions:
+            return []
+
+        anomalies = []
+        
+        # Group transactions by category
+        category_groups = {}
+        for tx in transactions:
+            if tx.category not in category_groups:
+                category_groups[tx.category] = []
+            category_groups[tx.category].append(tx)
+
+        # Calculate Z-scores per category
+        for category, txs in category_groups.items():
+            if len(txs) < 3:
+                # Need at least 3 transactions for meaningful statistics
+                continue
+
+            amounts = [float(tx.amount) for tx in txs]
+            mean = np.mean(amounts)
+            std = np.std(amounts)
+
+            if std == 0:
+                # All amounts are the same, no anomalies
+                continue
+
+            for tx in txs:
+                z_score = (float(tx.amount) - mean) / std
+                
+                if abs(z_score) > ANOMALY_ZSCORE_THRESHOLD:
+                    # Generate explanation
+                    if z_score > 0:
+                        explanation = f"This {category} transaction of ${tx.amount} is {abs(z_score):.1f} standard deviations above your average of ${mean:.2f}"
+                    else:
+                        explanation = f"This {category} transaction of ${tx.amount} is {abs(z_score):.1f} standard deviations below your average of ${mean:.2f}"
+
+                    anomalies.append(Anomaly(
+                        transaction_id=tx.id,
+                        transaction=tx,
+                        z_score=Decimal(str(z_score)),
+                        explanation=explanation,
+                        detected_at=datetime.utcnow()
+                    ))
+
+        return anomalies
+
+    def generate_forecast(
+        self,
+        transactions: List[Transaction],
+        periods: List[int]
+    ) -> List[Forecast]:
+        """
+        Generate spending forecasts using simple exponential smoothing.
+
+        Args:
+            transactions: Historical transactions
+            periods: List of forecast periods in months
+
+        Returns:
+            List of forecasts
+        """
+        if not transactions:
+            return []
+
+        # Check if we have enough data (at least 3 months)
+        if len(transactions) < FORECAST_MIN_MONTHS * 10:  # Rough estimate
+            raise ValueError(f"Insufficient data: need at least {FORECAST_MIN_MONTHS} months of transactions")
+
+        # Group by month and calculate monthly spending
+        monthly_spending = {}
+        for tx in transactions:
+            month_key = tx.date.strftime("%Y-%m")
+            if month_key not in monthly_spending:
+                monthly_spending[month_key] = 0
+            monthly_spending[month_key] += float(tx.amount)
+
+        # Sort by month
+        sorted_months = sorted(monthly_spending.keys())
+        amounts = [monthly_spending[m] for m in sorted_months]
+
+        if len(amounts) < FORECAST_MIN_MONTHS:
+            raise ValueError(f"Insufficient data: need at least {FORECAST_MIN_MONTHS} months")
+
+        # Simple exponential smoothing
+        alpha = 0.3  # Smoothing factor
+        forecasts = []
+
+        for period in periods:
+            # Calculate forecast
+            forecast_value = amounts[-1]  # Start with last value
+            for _ in range(period):
+                forecast_value = alpha * amounts[-1] + (1 - alpha) * forecast_value
+
+            # Calculate confidence interval (simple approach)
+            std = np.std(amounts)
+            confidence_interval = 1.96 * std  # 95% confidence
+
+            forecasts.append(Forecast(
+                period_months=period,
+                predicted_amount=Decimal(str(forecast_value)),
+                confidence_interval_lower=Decimal(str(max(0, forecast_value - confidence_interval))),
+                confidence_interval_upper=Decimal(str(forecast_value + confidence_interval)),
+                category=None
+            ))
+
+        return forecasts
+
+    async def retrain_categorizer(
+        self,
+        user_corrections: List[Tuple[str, str]]
+    ):
+        """
+        Retrain categorizer with user corrections (placeholder).
+
+        Args:
+            user_corrections: List of (text, correct_category) tuples
+        """
+        # In a production system, this would:
+        # 1. Collect user corrections
+        # 2. Periodically retrain the model
+        # 3. Evaluate on validation set
+        # 4. Deploy new model if performance improves
+        
+        print(f"📝 Collected {len(user_corrections)} user corrections for future retraining")
+        pass
+
+
+# Global instance
+ml_service = MLService()

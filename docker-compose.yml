@@ -1,0 +1,106 @@
+version: "3.9"
+
+services:
+  # === PostgreSQL Database ===
+  postgres:
+    image: postgres:16-alpine
+    container_name: fincopilot-db
+    environment:
+      POSTGRES_USER: fincopilot
+      POSTGRES_PASSWORD: fincopilot
+      POSTGRES_DB: fincopilot
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U fincopilot" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # === Redis (Cache + Celery Broker) ===
+  redis:
+    image: redis:7-alpine
+    container_name: fincopilot-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # === Ollama (Local LLM) ===
+  ollama:
+    image: ollama/ollama:latest
+    container_name: fincopilot-ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          memory: 4G
+
+  # === Backend (FastAPI) ===
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fincopilot-backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://fincopilot:fincopilot@postgres:5432/fincopilot
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      OLLAMA_BASE_URL: http://ollama:11434
+      CORS_ORIGINS: '["http://localhost:5173","http://localhost:3000"]'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - upload_data:/app/data
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+  # === Celery Worker ===
+  celery-worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fincopilot-celery
+    environment:
+      DATABASE_URL: postgresql+asyncpg://fincopilot:fincopilot@postgres:5432/fincopilot
+      REDIS_URL: redis://redis:6379/0
+      CELERY_BROKER_URL: redis://redis:6379/1
+      CELERY_RESULT_BACKEND: redis://redis:6379/2
+      OLLAMA_BASE_URL: http://ollama:11434
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: celery -A app.celery_app worker --loglevel=info --concurrency=2
+
+  # === Frontend (React + Vite) ===
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fincopilot-frontend
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    environment:
+      VITE_API_URL: http://localhost:8000
+
+volumes:
+  postgres_data:
+  ollama_data:
+  upload_data:
