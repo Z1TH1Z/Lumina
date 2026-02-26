@@ -1,6 +1,6 @@
 <div align="center">
   
-  # 🧠 AI Financial Copilot
+  # Lumina ( Your personal AI Finanace Copilot )
   
   **Your Open-Source, Privacy-First AI Wealth Manager**
 
