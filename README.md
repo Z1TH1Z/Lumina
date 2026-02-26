@@ -4,10 +4,10 @@
   
   **Your Open-Source, Privacy-First AI Wealth Manager**
 
-  [![FastAPI](https://img.shields.badge.svg)]()
-  [![React](https://img.shields.badge.svg)]()
-  [![Ollama](https://img.shields.badge.svg)]()
-  [![License: MIT](https://img.shields.badge.svg)]()
+  [![FastAPI](https://img.shields.badge.svg?label=FastAPI&message=Python&color=009688&logo=fastapi)](https://fastapi.tiangolo.com/)
+  [![React](https://img.shields.badge.svg?label=React&message=Vite&color=61DAFB&logo=react)](https://react.dev/)
+  [![Ollama](https://img.shields.badge.svg?label=Ollama&message=LLM&color=white&logo=ollama)](https://ollama.com/)
+  [![License: MIT](https://img.shields.badge.svg?label=License&message=MIT&color=yellow)](https://opensource.org/licenses/MIT)
 
   *An intelligent financial dashboard that reads your documents, analyzes your spending, and answers complex financial questions using 100% local AI models.*
 
