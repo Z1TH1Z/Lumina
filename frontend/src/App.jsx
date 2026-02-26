@@ -8,6 +8,7 @@ import Transactions from './pages/Transactions'
 import Anomalies from './pages/Anomalies'
 import Forecasting from './pages/Forecasting'
 import Chat from './pages/Chat'
+import VectorSpace from './pages/VectorSpace'
 import Tools from './pages/Tools'
 import Settings from './pages/Settings'
 
@@ -47,6 +48,7 @@ export default function App() {
                 <Route path="anomalies" element={<Anomalies />} />
                 <Route path="forecasting" element={<Forecasting />} />
                 <Route path="chat" element={<Chat />} />
+                <Route path="vector-space" element={<VectorSpace />} />
                 <Route path="tools" element={<Tools />} />
                 <Route path="settings" element={<Settings />} />
             </Route>

@@ -12,6 +12,7 @@ import {
     Brain,
     ChevronLeft,
     ChevronRight,
+    Network,
 } from 'lucide-react'
 import { useState } from 'react'
 import { useAuth } from '../context/AuthContext'
@@ -23,6 +24,7 @@ const navItems = [
     { path: '/anomalies', icon: AlertTriangle, label: 'Anomalies' },
     { path: '/forecasting', icon: TrendingUp, label: 'Forecasting' },
     { path: '/chat', icon: MessageSquare, label: 'AI Chat' },
+    { path: '/vector-space', icon: Network, label: 'Vector Space' },
     { path: '/tools', icon: Wrench, label: 'Tools' },
 ]
 

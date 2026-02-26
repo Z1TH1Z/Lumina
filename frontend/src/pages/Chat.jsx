@@ -1,10 +1,9 @@
-import React, { useState } from 'react'
-import { Sparkles, Bot, Loader2, Network } from 'lucide-react'
+import React from 'react'
+import { Sparkles, Bot, Loader2 } from 'lucide-react'
 import { useChat } from '../hooks/useChat'
 import ChatSidebar from '../components/chat/ChatSidebar'
 import ChatMessage from '../components/chat/ChatMessage'
 import ChatInput from '../components/chat/ChatInput'
-import VectorGraph from '../components/VectorGraph'
 
 export default function Chat() {
     const {
@@ -22,8 +21,6 @@ export default function Chat() {
         archiveSession,
         sendMessage,
     } = useChat()
-
-    const [showGraph, setShowGraph] = useState(false)
 
     // Quick action suggestions
     const suggestions = [
@@ -46,7 +43,7 @@ export default function Chat() {
 
             <div className="flex-1 flex overflow-hidden">
                 {/* Main Chat Area */}
-                <div className={`flex-1 flex flex-col page-container overflow-hidden ${showGraph ? 'border-r border-white/5 pr-4' : ''}`}>
+                <div className="flex-1 flex flex-col page-container overflow-hidden">
                     <div className="page-header shrink-0 pb-4 border-b border-white/5 mb-4 flex justify-between items-center pr-2">
                         <div>
                             <h1 className="page-title flex items-center gap-2">
@@ -55,17 +52,6 @@ export default function Chat() {
                             </h1>
                             <p className="page-subtitle">Ask questions about your finances using RAG-powered AI</p>
                         </div>
-
-                        <button
-                            onClick={() => setShowGraph(!showGraph)}
-                            className={`px-3 py-2 rounded-xl border flex gap-2 items-center text-sm transition-all shadow-sm shrink-0 ${showGraph
-                                ? 'bg-primary-500/20 border-primary-500/50 text-primary-300 shadow-primary-500/10'
-                                : 'bg-surface-800 border-white/10 text-surface-300 hover:text-white hover:bg-surface-700'
-                                }`}
-                        >
-                            <Network className="w-4 h-4" />
-                            {showGraph ? 'Close Visualizer' : 'Visualize Brain'}
-                        </button>
                     </div>
 
                     {/* Messages */}
@@ -120,12 +106,6 @@ export default function Chat() {
                         isLoading={loading || fetchingMessages}
                     />
                 </div>
-
-                {showGraph && (
-                    <div className="w-[45%] h-full p-4 pl-0 bg-surface-950 flex flex-col animate-slide-left border-l border-white/5 shrink-0">
-                        <VectorGraph />
-                    </div>
-                )}
             </div>
         </div>
     )

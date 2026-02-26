@@ -170,7 +170,6 @@ async def get_graph_nodes(
         cat_id = f"cat_{cat}"
         nodes.append({"id": cat_id, "name": str(cat).capitalize(), "group": "category", "val": 10})
         valid_node_ids.add(cat_id)
-        links.append({"source": cat_id, "target": user_node_id, "value": 5})
 
     for t in transactions:
         txn_id = f"txn_{t.id}"
@@ -184,18 +183,31 @@ async def get_graph_nodes(
         })
         valid_node_ids.add(txn_id)
         
-        # Guard against orphan links
         cat_str = t.category.value if hasattr(t.category, 'value') else str(t.category) if t.category else None
         target_cat_id = f"cat_{cat_str}"
-        
-        # Verify the target exists before adding the link
         target_id = target_cat_id if target_cat_id in valid_node_ids else user_node_id
         
-        links.append({
-            "source": txn_id,
-            "target": target_id,
-            "value": 1
-        })
+        # Determine Direction based on Income (positive) or Expense (negative)
+        is_income = t.amount > 0
+        
+        # For Income: Money flows to You (Txn -> Category -> User)
+        # For Expense: Money flows out (User -> Category -> Txn)
+        
+        # Determine link color
+        link_color = "#10b981" if is_income else "#ef4444" 
+        
+        if is_income:
+            # Transaction -> Category -> User
+            links.append({"source": txn_id, "target": target_id, "value": 1, "color": link_color})
+            
+            # Add or update the Category -> User link if not already added 
+            # (Just doing it redundantly for visual density is fine since ForceGraph maps it)
+            links.append({"source": target_id, "target": user_node_id, "value": 5, "color": link_color})
+        else:
+            # User -> Category -> Transaction
+            links.append({"source": user_node_id, "target": target_id, "value": 5, "color": link_color})
+            links.append({"source": target_id, "target": txn_id, "value": 1, "color": link_color})
+            
         
     # RAG Docs
     stats = get_index_stats()
@@ -203,13 +215,13 @@ async def get_graph_nodes(
         rag_id = "rag_brain"
         nodes.append({"id": rag_id, "name": "AI Memory", "group": "ai", "val": 15})
         valid_node_ids.add(rag_id)
-        links.append({"source": rag_id, "target": user_node_id, "value": 5})
+        links.append({"source": rag_id, "target": user_node_id, "value": 5, "color": "#f59e0b"})
 
         for doc_id in stats.get("document_ids", []):
             doc_node_id = f"doc_{doc_id}"
             nodes.append({"id": doc_node_id, "name": f"Document {doc_id}", "group": "document", "val": 8})
             valid_node_ids.add(doc_node_id)
-            links.append({"source": doc_node_id, "target": rag_id, "value": 2})
+            links.append({"source": doc_node_id, "target": rag_id, "value": 2, "color": "#3b82f6"})
 
     return {"nodes": nodes, "links": links}
 

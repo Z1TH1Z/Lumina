@@ -53,6 +53,10 @@ const VectorGraph = ({ onNodeClick }) => {
                 <div className="flex items-center gap-2 mb-1"><span className="w-3 h-3 rounded-full bg-blue-500 block"></span> Categories</div>
                 <div className="flex items-center gap-2 mb-1"><span className="w-3 h-3 rounded-full bg-red-500 block"></span> Transactions</div>
                 <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-emerald-500 block"></span> AI Memory</div>
+                <div className="mt-3 pt-2 border-t border-slate-700">
+                    <div className="flex items-center gap-2 mb-1"><span className="w-3 h-[2px] bg-red-500 block"></span> Expense Flow</div>
+                    <div className="flex items-center gap-2"><span className="w-3 h-[2px] bg-emerald-500 block"></span> Income Flow</div>
+                </div>
             </div>
 
             {bounds.width > 0 && bounds.height > 0 && graphData.nodes && graphData.nodes.length > 0 && (
@@ -63,11 +67,14 @@ const VectorGraph = ({ onNodeClick }) => {
                     graphData={graphData}
                     nodeLabel="name"
                     nodeColor={node => groupColors[node.group] || '#999'}
-                    nodeVal={node => node.val || 1}
-                    linkColor={() => '#475569'}
-                    linkOpacity={0.3}
-                    linkWidth={1}
-                    nodeResolution={16}
+                    nodeVal={node => (node.val || 1) * 1.5}
+                    linkColor={link => link.color || '#475569'}
+                    linkOpacity={0.9}
+                    linkWidth={2}
+                    linkDirectionalParticles={6}
+                    linkDirectionalParticleWidth={2.5}
+                    linkDirectionalParticleSpeed={d => d.value * 0.002}
+                    nodeResolution={24}
                     backgroundColor="#0f172a"
                     onNodeClick={(node) => {
                         if (!node || !node.x || !node.y || !node.z) return;
