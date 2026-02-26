@@ -1,4 +1,4 @@
-# Lumina 🧠
+# Lumina 
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-Python-009688?logo=fastapi)](https://fastapi.tiangolo.com/) [![React](https://img.shields.io/badge/React-Vite-61DAFB?logo=react&logoColor=black)](https://react.dev/) [![Ollama](https://img.shields.io/badge/Ollama-LLM-white?logo=ollama&logoColor=black)](https://ollama.com/) 
 
