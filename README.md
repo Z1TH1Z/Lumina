@@ -15,7 +15,7 @@
 
 ---
 
-##  Overview
+## Overview
 
 The **AI Financial Copilot** is a self-hostable, full-stack application designed to replace cloud-based financial aggregators. By combining traditional deterministic financial tools with advanced generative AI and machine learning techniques, it acts as a proactive financial advisor.
 
@@ -34,7 +34,7 @@ Crucially, this project emphasizes **privacy and data sovereignty**. By leveragi
 
 ---
 
-## 🛠️ Architecture & Tech Stack
+## Architecture & Tech Stack
 
 **Frontend (Client)**
 - React (Vite)
@@ -52,7 +52,7 @@ Crucially, this project emphasizes **privacy and data sovereignty**. By leveragi
 
 ---
 
-##  Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -99,7 +99,7 @@ The application will be available at `http://localhost:5173`.
 
 ---
 
-##  Environment Variables
+## Environment Variables
 
 Create a `.env` file in the `backend/` directory with the following base configuration:
 
@@ -117,7 +117,7 @@ JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
 
 ---
 
-##  Contributing
+## Contributing
 
 Contributions make the open-source community an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
@@ -129,7 +129,7 @@ Contributions make the open-source community an amazing place to learn, inspire,
 
 ---
 
-##  License
+## License
 
 Distributed under the MIT License. See `LICENSE` for more information.
 
