@@ -15,7 +15,7 @@
 
 ---
 
-## 🌟 Overview
+##  Overview
 
 The **AI Financial Copilot** is a self-hostable, full-stack application designed to replace cloud-based financial aggregators. By combining traditional deterministic financial tools with advanced generative AI and machine learning techniques, it acts as a proactive financial advisor.
 
@@ -23,14 +23,14 @@ Crucially, this project emphasizes **privacy and data sovereignty**. By leveragi
 
 ---
 
-## ✨ Key Features
+## Key Features
 
-- 📄 **Intelligent Document Ingestion:** Drag and drop PDF bank statements or receipts. The system automatically categorizes and extracts transactions using OCR and structured parsing.
-- 💬 **RAG-Powered Chat Assistant:** Chat naturally with your financial data. Ask questions like *"How much did I spend on dining last month?"* and get instant, cited answers powered by `llama3.1`.
-- 📊 **Interactive Dashboards:** Visualizations built with Recharts surface your cash flow, top spending categories, and progress against monthly budgets.
-- 🔮 **Predictive Forecasting:** Anticipate your future account balances with exponential smoothing and machine tracking models.
-- 🚨 **Anomaly Detection:** ML-driven agent automatically analyzes your ledger to flag out-of-the-ordinary charges or potential double-billing.
-- 🧮 **Deterministic Tools Base:** Pre-built calculators for compound interest, loan amortizations, and a secure Python sandbox for custom numbercrunching.
+-  **Intelligent Document Ingestion:** Drag and drop PDF bank statements or receipts. The system automatically categorizes and extracts transactions using OCR and structured parsing.
+-  **RAG-Powered Chat Assistant:** Chat naturally with your financial data. Ask questions like *"How much did I spend on dining last month?"* and get instant, cited answers powered by `llama3.1`.
+-  **Interactive Dashboards:** Visualizations built with Recharts surface your cash flow, top spending categories, and progress against monthly budgets.
+-  **Predictive Forecasting:** Anticipate your future account balances with exponential smoothing and machine tracking models.
+-  **Anomaly Detection:** ML-driven agent automatically analyzes your ledger to flag out-of-the-ordinary charges or potential double-billing.
+-  **Deterministic Tools Base:** Pre-built calculators for compound interest, loan amortizations, and a secure Python sandbox for custom numbercrunching.
 
 ---
 
@@ -52,7 +52,7 @@ Crucially, this project emphasizes **privacy and data sovereignty**. By leveragi
 
 ---
 
-## 🚀 Getting Started
+##  Getting Started
 
 ### Prerequisites
 
@@ -99,7 +99,7 @@ The application will be available at `http://localhost:5173`.
 
 ---
 
-## 🔐 Environment Variables
+##  Environment Variables
 
 Create a `.env` file in the `backend/` directory with the following base configuration:
 
@@ -117,7 +117,7 @@ JWT_ACCESS_TOKEN_EXPIRE_MINUTES=30
 
 ---
 
-## 🤝 Contributing
+##  Contributing
 
 Contributions make the open-source community an amazing place to learn, inspire, and create. Any contributions you make are **greatly appreciated**.
 
@@ -129,7 +129,7 @@ Contributions make the open-source community an amazing place to learn, inspire,
 
 ---
 
-## 📜 License
+##  License
 
 Distributed under the MIT License. See `LICENSE` for more information.
 
