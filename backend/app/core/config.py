@@ -38,6 +38,9 @@ class Settings(BaseSettings):
     # FAISS
     FAISS_INDEX_PATH: str = "./data/faiss_index"
 
+    # ML Models
+    CATEGORIZER_MODEL_PATH: str = "./models/categorizer.pkl"
+
     # File Upload
     UPLOAD_DIR: str = "./data/uploads"
     MAX_UPLOAD_SIZE_MB: int = 50

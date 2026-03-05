@@ -1,14 +1,13 @@
 """Unit tests for MLService anomaly detection."""
 
 import pytest
-from datetime import date, datetime
+from datetime import date
 from decimal import Decimal
-from uuid import uuid4
-from unittest.mock import AsyncMock, MagicMock, patch
-import json
+from unittest.mock import MagicMock
 
 from app.services.ml_service import MLService
 from app.models.transaction import Transaction
+from app.core.constants import ANOMALY_ZSCORE_THRESHOLD
 
 
 @pytest.fixture
@@ -19,196 +18,93 @@ def ml_service():
 
 @pytest.fixture
 def sample_transactions():
-    """Create sample transactions for testing."""
-    user_id = uuid4()
+    """Create sample transactions for testing using MagicMock."""
     transactions = []
-    
+
     # Create normal food transactions
     for amount in [50.0, 55.0, 52.0, 48.0, 53.0]:
         tx = MagicMock(spec=Transaction)
-        tx.id = uuid4()
-        tx.user_id = user_id
+        tx.id = 1
+        tx.user_id = 1
         tx.category = "food"
         tx.amount = Decimal(str(amount))
         tx.date = date(2024, 1, 1)
         transactions.append(tx)
-    
-    # Create an anomalous food transaction
+
+    # Create an anomalous food transaction (much higher than average)
     tx_anomaly = MagicMock(spec=Transaction)
-    tx_anomaly.id = uuid4()
-    tx_anomaly.user_id = user_id
+    tx_anomaly.id = 6
+    tx_anomaly.user_id = 1
     tx_anomaly.category = "food"
-    tx_anomaly.amount = Decimal("200.0")  # Much higher than average
+    tx_anomaly.amount = Decimal("200.0")
     tx_anomaly.date = date(2024, 1, 15)
     transactions.append(tx_anomaly)
-    
+
     return transactions
 
 
-def test_compute_statistics(ml_service, sample_transactions):
-    """Test compute_statistics calculates mean and std correctly."""
-    statistics = ml_service.compute_statistics(sample_transactions)
-    
-    assert "food" in statistics
-    assert "mean" in statistics["food"]
-    assert "std" in statistics["food"]
-    
-    # Check that mean is reasonable (should be around 75-80 with the anomaly)
-    assert 60 < statistics["food"]["mean"] < 90
-    assert statistics["food"]["std"] > 0
+def test_detect_anomalies_returns_list(ml_service, sample_transactions):
+    """Test detect_anomalies returns a list of anomalies."""
+    user_id = "1"
+    anomalies = ml_service.detect_anomalies(sample_transactions, user_id)
+    assert isinstance(anomalies, list)
 
 
-def test_compute_statistics_empty_list(ml_service):
-    """Test compute_statistics with empty transaction list."""
-    statistics = ml_service.compute_statistics([])
-    assert statistics == {}
+def test_detect_anomalies_finds_outlier(ml_service, sample_transactions):
+    """Test detect_anomalies flags the high-value transaction."""
+    user_id = "1"
+    anomalies = ml_service.detect_anomalies(sample_transactions, user_id)
 
-
-def test_compute_statistics_insufficient_data(ml_service):
-    """Test compute_statistics with less than 3 transactions per category."""
-    tx1 = MagicMock(spec=Transaction)
-    tx1.category = "food"
-    tx1.amount = Decimal("50.0")
-    
-    tx2 = MagicMock(spec=Transaction)
-    tx2.category = "food"
-    tx2.amount = Decimal("55.0")
-    
-    statistics = ml_service.compute_statistics([tx1, tx2])
-    
-    # Should not include category with less than 3 transactions
-    assert "food" not in statistics
-
-
-def test_calculate_z_score(ml_service):
-    """Test calculate_z_score calculates correctly."""
-    tx = MagicMock(spec=Transaction)
-    tx.category = "food"
-    tx.amount = Decimal("100.0")
-    
-    statistics = {
-        "food": {
-            "mean": 50.0,
-            "std": 10.0
-        }
-    }
-    
-    z_score = ml_service.calculate_z_score(tx, statistics)
-    
-    # Z-score should be (100 - 50) / 10 = 5.0
-    assert z_score == 5.0
-
-
-def test_calculate_z_score_zero_std(ml_service):
-    """Test calculate_z_score with zero standard deviation."""
-    tx = MagicMock(spec=Transaction)
-    tx.category = "food"
-    tx.amount = Decimal("50.0")
-    
-    statistics = {
-        "food": {
-            "mean": 50.0,
-            "std": 0.0
-        }
-    }
-    
-    z_score = ml_service.calculate_z_score(tx, statistics)
-    
-    # Should return 0.0 when std is 0
-    assert z_score == 0.0
-
-
-def test_calculate_z_score_no_statistics(ml_service):
-    """Test calculate_z_score when category not in statistics."""
-    tx = MagicMock(spec=Transaction)
-    tx.category = "food"
-    tx.amount = Decimal("50.0")
-    
-    statistics = {}
-    
-    z_score = ml_service.calculate_z_score(tx, statistics)
-    
-    # Should return None when no statistics available
-    assert z_score is None
-
-
-@pytest.mark.asyncio
-async def test_detect_anomalies_with_cache(ml_service, sample_transactions):
-    """Test detect_anomalies uses Redis cache."""
-    user_id = str(uuid4())
-    
-    # Mock Redis client
-    mock_redis = AsyncMock()
-    mock_redis.get.return_value = None  # No cached data
-    mock_redis.setex.return_value = True
-    
-    with patch('app.services.ml_service.get_redis_client', return_value=mock_redis):
-        anomalies = await ml_service.detect_anomalies(sample_transactions, user_id)
-    
-    # Should have detected the anomalous transaction
+    # The $200 transaction should be flagged — it is far above the ~50 average
     assert len(anomalies) > 0
-    
-    # Verify Redis was called
-    mock_redis.get.assert_called_once()
-    mock_redis.setex.assert_called_once()
-    
-    # Check that cache key includes user_id
-    cache_key = mock_redis.get.call_args[0][0]
-    assert user_id in cache_key
+
+    anomaly_tx_ids = [a.transaction_id for a in anomalies]
+    assert 6 in anomaly_tx_ids
 
 
-@pytest.mark.asyncio
-async def test_detect_anomalies_uses_cached_statistics(ml_service, sample_transactions):
-    """Test detect_anomalies uses cached statistics when available."""
-    user_id = str(uuid4())
-    
-    # Mock cached statistics
-    cached_stats = {
-        "food": {
-            "mean": 51.6,
-            "std": 2.5
-        }
-    }
-    
-    # Mock Redis client
-    mock_redis = AsyncMock()
-    mock_redis.get.return_value = json.dumps(cached_stats)
-    
-    with patch('app.services.ml_service.get_redis_client', return_value=mock_redis):
-        anomalies = await ml_service.detect_anomalies(sample_transactions, user_id)
-    
-    # Should have detected anomalies using cached stats
-    assert len(anomalies) > 0
-    
-    # Verify Redis get was called but setex was not (using cached data)
-    mock_redis.get.assert_called_once()
-    mock_redis.setex.assert_not_called()
-
-
-@pytest.mark.asyncio
-async def test_detect_anomalies_empty_list(ml_service):
+def test_detect_anomalies_empty_list(ml_service):
     """Test detect_anomalies with empty transaction list."""
-    user_id = str(uuid4())
-    
-    anomalies = await ml_service.detect_anomalies([], user_id)
-    
+    anomalies = ml_service.detect_anomalies([], "1")
     assert anomalies == []
 
 
-@pytest.mark.asyncio
-async def test_detect_anomalies_explanation(ml_service, sample_transactions):
-    """Test detect_anomalies generates proper explanations."""
-    user_id = str(uuid4())
-    
-    # Mock Redis client
-    mock_redis = AsyncMock()
-    mock_redis.get.return_value = None
-    mock_redis.setex.return_value = True
-    
-    with patch('app.services.ml_service.get_redis_client', return_value=mock_redis):
-        anomalies = await ml_service.detect_anomalies(sample_transactions, user_id)
-    
-    # Check that anomalies have explanations
+def test_detect_anomalies_insufficient_data(ml_service):
+    """Test detect_anomalies with less than 3 transactions (not enough for statistics)."""
+    tx1 = MagicMock(spec=Transaction)
+    tx1.id = 1
+    tx1.category = "food"
+    tx1.amount = Decimal("50.0")
+
+    tx2 = MagicMock(spec=Transaction)
+    tx2.id = 2
+    tx2.category = "food"
+    tx2.amount = Decimal("55.0")
+
+    anomalies = ml_service.detect_anomalies([tx1, tx2], "1")
+    # With < 3 transactions per category, no anomalies should be detected
+    assert anomalies == []
+
+
+def test_detect_anomalies_uniform_amounts(ml_service):
+    """Test detect_anomalies when all amounts are identical (std=0)."""
+    transactions = []
+    for i in range(5):
+        tx = MagicMock(spec=Transaction)
+        tx.id = i
+        tx.category = "utilities"
+        tx.amount = Decimal("100.0")
+        tx.date = date(2024, 1, 1)
+        transactions.append(tx)
+
+    anomalies = ml_service.detect_anomalies(transactions, "1")
+    # All amounts are the same, std=0, so no anomalies
+    assert anomalies == []
+
+
+def test_detect_anomalies_explanation_content(ml_service, sample_transactions):
+    """Test detect_anomalies generates explanations with expected content."""
+    anomalies = ml_service.detect_anomalies(sample_transactions, "1")
+
     for anomaly in anomalies:
         assert anomaly.explanation
         assert "standard deviations" in anomaly.explanation
@@ -216,18 +112,47 @@ async def test_detect_anomalies_explanation(ml_service, sample_transactions):
         assert anomaly.z_score is not None
 
 
-@pytest.mark.asyncio
-async def test_detect_anomalies_redis_error_handling(ml_service, sample_transactions):
-    """Test detect_anomalies handles Redis errors gracefully."""
-    user_id = str(uuid4())
-    
-    # Mock Redis client that raises an error
-    mock_redis = AsyncMock()
-    mock_redis.get.side_effect = Exception("Redis connection error")
-    
-    with patch('app.services.ml_service.get_redis_client', return_value=mock_redis):
-        # Should not raise exception, should compute statistics directly
-        anomalies = await ml_service.detect_anomalies(sample_transactions, user_id)
-    
-    # Should still detect anomalies despite Redis error
-    assert len(anomalies) > 0
+def test_detect_anomalies_multiple_categories(ml_service):
+    """Test detect_anomalies handles multiple categories independently."""
+    transactions = []
+
+    # Normal food transactions
+    for i, amount in enumerate([50.0, 55.0, 52.0]):
+        tx = MagicMock(spec=Transaction)
+        tx.id = i
+        tx.category = "food"
+        tx.amount = Decimal(str(amount))
+        tx.date = date(2024, 1, 1)
+        transactions.append(tx)
+
+    # Normal transport transactions
+    for i, amount in enumerate([20.0, 22.0, 21.0], start=10):
+        tx = MagicMock(spec=Transaction)
+        tx.id = i
+        tx.category = "transport"
+        tx.amount = Decimal(str(amount))
+        tx.date = date(2024, 1, 1)
+        transactions.append(tx)
+
+    # Add anomalous transport transaction
+    tx_anomaly = MagicMock(spec=Transaction)
+    tx_anomaly.id = 99
+    tx_anomaly.category = "transport"
+    tx_anomaly.amount = Decimal("200.0")
+    tx_anomaly.date = date(2024, 1, 15)
+    transactions.append(tx_anomaly)
+
+    anomalies = ml_service.detect_anomalies(transactions, "1")
+
+    # The $200 transport transaction should be flagged
+    anomaly_ids = [a.transaction_id for a in anomalies]
+    assert 99 in anomaly_ids
+
+    # The food transactions should NOT be flagged
+    for i in range(3):
+        assert i not in anomaly_ids
+
+
+def test_anomaly_zscore_threshold_constant():
+    """Test the Z-score threshold constant value."""
+    assert ANOMALY_ZSCORE_THRESHOLD == 2.5

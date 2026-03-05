@@ -30,6 +30,32 @@ def create_mock_statement(filename, transactions):
     elements.append(t)
     doc.build(elements)
 
+
+def create_encrypted_statement(filename, transactions, password):
+    """Create a password-protected PDF statement using pikepdf.
+
+    Steps:
+      1. Generate an unencrypted PDF via reportlab.
+      2. Encrypt it with pikepdf using the given password.
+    """
+    import tempfile, os
+    import pikepdf
+
+    # Build the unencrypted PDF first
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+    tmp.close()
+    create_mock_statement(tmp.name, transactions)
+
+    # Encrypt it
+    pdf = pikepdf.open(tmp.name)
+    pdf.save(
+        filename,
+        encryption=pikepdf.Encryption(owner=password, user=password, R=6),
+    )
+    pdf.close()
+    os.remove(tmp.name)
+
+
 if __name__ == "__main__":
     txns = [
         ["2026-01-02", "PAYROLL DEPOSIT - TECH CORP", "5000.00"],
@@ -44,5 +70,11 @@ if __name__ == "__main__":
         ["2026-01-25", "ELECTRICITY BILL", "-85.00"],
         ["2026-01-28", "GYM MEMBERSHIP", "-50.00"],
     ]
+
+    # Unencrypted version
     create_mock_statement("mock_statement.pdf", txns)
-    print("Created mock_statement.pdf")
+    print("Created mock_statement.pdf (unencrypted)")
+
+    # Encrypted version (password: test123)
+    create_encrypted_statement("mock_statement_encrypted.pdf", txns, "test123")
+    print("Created mock_statement_encrypted.pdf (password: test123)")

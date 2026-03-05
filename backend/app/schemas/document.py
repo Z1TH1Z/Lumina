@@ -25,3 +25,10 @@ class DocumentUploadResponse(BaseModel):
     filename: str
     status: str
     message: str
+    encrypted: bool = False
+
+
+class EncryptionCheckResponse(BaseModel):
+    encrypted: bool
+    file_id: str
+    filename: str

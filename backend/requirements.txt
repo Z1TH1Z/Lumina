@@ -26,6 +26,7 @@ httpx
 # === Document Processing ===
 pdfplumber
 PyMuPDF
+pikepdf
 
 # === WebSocket ===
 websockets
