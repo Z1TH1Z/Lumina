@@ -25,7 +25,7 @@ Crucially, this project emphasizes **privacy and data sovereignty**. By leveragi
 
 ## Key Features
 
--  **Intelligent Document Ingestion:** Drag and drop PDF bank statements or receipts. The system automatically categorizes and extracts transactions using OCR and structured parsing.
+-  **Intelligent Document Ingestion:** Drag and drop PDF, Markdown (.md), Text (.txt), or Excel (.xls/.xlsx) bank statements and receipts. The system automatically categorizes and extracts transactions using OCR and structured parsing.
 -  **RAG-Powered Chat Assistant:** Chat naturally with your financial data. Ask questions like *"How much did I spend on dining last month?"* and get instant, cited answers powered by `llama3.1`.
 -  **Interactive Dashboards:** Visualizations built with Recharts surface your cash flow, top spending categories, and progress against monthly budgets.
 -  **Predictive Forecasting:** Anticipate your future account balances with exponential smoothing and machine tracking models.
@@ -47,7 +47,7 @@ Crucially, this project emphasizes **privacy and data sovereignty**. By leveragi
 - FastAPI (Python 3.10+)
 - SQLAlchemy (Async SQLite)
 - Ollama (`llama3.1` & `nomic-embed-text`)
-- PyMuPDF & pdfplumber (Document processing)
+- PyMuPDF, pdfplumber & pandas (Document processing)
 - Sentence-Transformers & FAISS (Vector retrieval)
 
 ---
