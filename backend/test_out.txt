@@ -1,0 +1,94 @@
+============================= test session starts =============================
+platform win32 -- Python 3.14.2, pytest-9.0.2, pluggy-1.6.0 -- C:\Users\Nithin\OneDrive\Desktop\Projects\AI_Finan\backend\venv\Scripts\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\Nithin\OneDrive\Desktop\Projects\AI_Finan\backend
+plugins: anyio-4.12.1, asyncio-1.3.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 12 items
+
+tests/unit/test_anomaly_detection_worker.py::test_detect_transaction_anomalies_z_score_threshold PASSED [  8%]
+tests/unit/test_anomaly_detection_worker.py::test_anomaly_schema_creation PASSED [ 16%]
+tests/unit/test_anomaly_detection_worker.py::test_forecast_schema_creation PASSED [ 25%]
+tests/unit/test_anomaly_detection_worker.py::test_forecast_schema_no_category PASSED [ 33%]
+tests/unit/test_ml_service_anomaly.py::test_detect_anomalies_returns_list PASSED [ 41%]
+tests/unit/test_ml_service_anomaly.py::test_detect_anomalies_finds_outlier FAILED [ 50%]
+tests/unit/test_ml_service_anomaly.py::test_detect_anomalies_empty_list PASSED [ 58%]
+tests/unit/test_ml_service_anomaly.py::test_detect_anomalies_insufficient_data PASSED [ 66%]
+tests/unit/test_ml_service_anomaly.py::test_detect_anomalies_uniform_amounts PASSED [ 75%]
+tests/unit/test_ml_service_anomaly.py::test_detect_anomalies_explanation_content PASSED [ 83%]
+tests/unit/test_ml_service_anomaly.py::test_detect_anomalies_multiple_categories FAILED [ 91%]
+tests/unit/test_ml_service_anomaly.py::test_anomaly_zscore_threshold_constant PASSED [100%]
+
+================================== FAILURES ===================================
+_____________________ test_detect_anomalies_finds_outlier _____________________
+
+ml_service = <app.services.ml_service.MLService object at 0x0000021C13517750>
+sample_transactions = [<MagicMock spec='Transaction' id='2319607466032'>, <MagicMock spec='Transaction' id='2319607466368'>, <MagicMock spec...'2319607467040'>, <MagicMock spec='Transaction' id='2319607467376'>, <MagicMock spec='Transaction' id='2319607467712'>]
+
+    def test_detect_anomalies_finds_outlier(ml_service, sample_transactions):
+        """Test detect_anomalies flags the high-value transaction."""
+        user_id = "1"
+        anomalies = ml_service.detect_anomalies(sample_transactions, user_id)
+    
+        # The $200 transaction should be flagged — it is far above the ~50 average
+>       assert len(anomalies) > 0
+E       assert 0 > 0
+E        +  where 0 = len([])
+
+tests\unit\test_ml_service_anomaly.py:59: AssertionError
+__________________ test_detect_anomalies_multiple_categories __________________
+
+ml_service = <app.services.ml_service.MLService object at 0x0000021C13608380>
+
+    def test_detect_anomalies_multiple_categories(ml_service):
+        """Test detect_anomalies handles multiple categories independently."""
+        transactions = []
+    
+        # Normal food transactions
+        for i, amount in enumerate([50.0, 55.0, 52.0]):
+            tx = MagicMock(spec=Transaction)
+            tx.id = i
+            tx.category = "food"
+            tx.amount = Decimal(str(amount))
+            tx.date = date(2024, 1, 1)
+            transactions.append(tx)
+    
+        # Normal transport transactions
+        for i, amount in enumerate([20.0, 22.0, 21.0], start=10):
+            tx = MagicMock(spec=Transaction)
+            tx.id = i
+            tx.category = "transport"
+            tx.amount = Decimal(str(amount))
+            tx.date = date(2024, 1, 1)
+            transactions.append(tx)
+    
+        # Add anomalous transport transaction
+        tx_anomaly = MagicMock(spec=Transaction)
+        tx_anomaly.id = 99
+        tx_anomaly.category = "transport"
+        tx_anomaly.amount = Decimal("200.0")
+        tx_anomaly.date = date(2024, 1, 15)
+        transactions.append(tx_anomaly)
+    
+        anomalies = ml_service.detect_anomalies(transactions, "1")
+    
+        # The $200 transport transaction should be flagged
+        anomaly_ids = [a.transaction_id for a in anomalies]
+>       assert 99 in anomaly_ids
+E       assert 99 in []
+
+tests\unit\test_ml_service_anomaly.py:149: AssertionError
+============================== warnings summary ===============================
+app\core\config.py:8
+  C:\Users\Nithin\OneDrive\Desktop\Projects\AI_Finan\backend\app\core\config.py:8: PydanticDeprecatedSince20: Support for class-based `config` is deprecated, use ConfigDict instead. Deprecated in Pydantic V2.0 to be removed in V3.0. See Pydantic V2 Migration Guide at https://errors.pydantic.dev/2.12/migration/
+    class Settings(BaseSettings):
+
+tests/unit/test_anomaly_detection_worker.py::test_anomaly_schema_creation
+  C:\Users\Nithin\OneDrive\Desktop\Projects\AI_Finan\backend\tests\unit\test_anomaly_detection_worker.py:24: DeprecationWarning: datetime.datetime.utcnow() is deprecated and scheduled for removal in a future version. Use timezone-aware objects to represent datetimes in UTC: datetime.datetime.now(datetime.UTC).
+    detected_at=datetime.utcnow()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/unit/test_ml_service_anomaly.py::test_detect_anomalies_finds_outlier
+FAILED tests/unit/test_ml_service_anomaly.py::test_detect_anomalies_multiple_categories
+================== 2 failed, 10 passed, 2 warnings in 0.71s ===================

@@ -1,0 +1,65 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+env/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Build
+dist/
+build/
+*.egg-info/
+
+# Data
+backend/data/*
+!backend/data/.gitkeep
+*.faiss
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Docker
+docker-compose.override.yml
+
+# Test Data
+Acct_Statement*
+
+# Datasets & Models (stored centrally at ~/datasets and ~/models)
+datasets/
+models/
+data/raw/
+*.pkl
+*.joblib
+*.pt
+*.h5
+
+# Accidental pip --target installs in project root
+*.dist-info/
+*.pyd
+*.so
+OleFileIO_PL.py
+cffi/
+cryptography/
+msoffcrypto/
+olefile/
+pycparser/
+bin/
+NOTICE.txt
+requirements.txt

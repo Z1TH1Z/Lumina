@@ -1,0 +1,5 @@
+# Test-only dependencies — install with: pip install -r requirements-test.txt
+pytest
+pytest-asyncio
+anyio[asyncio]
+bcrypt
