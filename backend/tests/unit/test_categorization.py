@@ -3,6 +3,7 @@
 import pytest
 from datetime import date
 
+from app.core.constants import CATEGORIZATION_CONFIDENCE_THRESHOLD
 from app.services.categorization import (
     normalize_merchant,
     clean_text,
@@ -183,6 +184,24 @@ class TestClassifyTransaction:
             txn_date=date(2024, 3, 15),
         )
         assert result["category"] == "transport"
+
+    def test_ml_tier_fires_at_configured_threshold(self, monkeypatch):
+        from app.services.ml_service import ml_service
+
+        def fake_predict_category(description, features=None):
+            return "education", CATEGORIZATION_CONFIDENCE_THRESHOLD
+
+        monkeypatch.setattr(ml_service, "predict_category", fake_predict_category)
+
+        result = classify_transaction(
+            description="qwerty txn abc",
+            merchant="unknown merchant",
+            amount=-123.45,
+        )
+
+        assert result["method"] == "ml"
+        assert result["category"] == "education"
+        assert result["confidence"] == CATEGORIZATION_CONFIDENCE_THRESHOLD
 
 
 # ---------------------------------------------------------------------------

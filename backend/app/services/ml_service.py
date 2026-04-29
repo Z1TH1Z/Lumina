@@ -2,6 +2,7 @@
 
 import pickle
 import json
+import logging
 import numpy as np
 from typing import Tuple, List, Dict, Optional
 from decimal import Decimal
@@ -19,6 +20,7 @@ from app.models.transaction import Transaction
 from app.schemas.transaction import Anomaly, Forecast
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 
 async def get_redis_client() -> Redis:
@@ -40,10 +42,18 @@ class MLService:
             try:
                 with open(self._model_path, 'rb') as f:
                     self._categorizer_model = pickle.load(f)
-                print(f"✅ Loaded categorization model from {self._model_path}")
+                logger.info("Loaded categorization model from %s", self._model_path)
             except FileNotFoundError:
-                print(f"⚠️  Model not found at {self._model_path}")
-                print("   Run: python -m app.ml.train_categorizer")
+                logger.warning("Categorization model not found at %s", self._model_path)
+                logger.warning("Run: python -m app.ml.train_categorizer")
+                self._categorizer_model = None
+            except Exception as exc:
+                logger.warning(
+                    "Failed loading categorization model from %s (%s: %s)",
+                    self._model_path,
+                    type(exc).__name__,
+                    exc,
+                )
                 self._categorizer_model = None
         
         return self._categorizer_model

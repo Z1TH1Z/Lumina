@@ -6,6 +6,8 @@ from datetime import datetime, date as date_type
 from typing import Optional
 from collections import defaultdict
 
+from app.core.constants import CATEGORIZATION_CONFIDENCE_THRESHOLD
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -367,7 +369,7 @@ def classify_transaction(
     merchant: Optional[str] = None,
     amount: float = 0.0,
     txn_date: Optional[date_type] = None,
-    confidence_threshold: float = 0.70,
+    confidence_threshold: float = CATEGORIZATION_CONFIDENCE_THRESHOLD,
 ) -> dict:
     """
     Hybrid categorization pipeline:
@@ -400,7 +402,11 @@ def classify_transaction(
         if conf >= confidence_threshold:
             return {"category": cat, "confidence": conf, "method": "ml"}
     except Exception as e:
-        logger.debug(f"ML classifier unavailable: {e}")
+        logger.warning(
+            "ML classifier unavailable; falling back to keyword tier (%s: %s)",
+            type(e).__name__,
+            e,
+        )
 
     # --- Step 4: keyword scorer ---
     cat, conf = _keyword_scorer(text, amount)
