@@ -229,7 +229,10 @@ def rule_engine(text: str, amount: float = 0.0) -> Optional[tuple[str, float]]:
 # ---------------------------------------------------------------------------
 
 CATEGORY_KEYWORDS: dict[str, list[str]] = {
-    "housing": ["rent", "mortgage", "property", "apartment", "lease", "hoa", "housing"],
+    "housing": [
+        "rent", "mortgage", "property", "apartment", "lease", "hoa", "housing",
+        "landlord", "rental", "tenant", "society", "maintenance", "home loan", "flat",
+    ],
     "food": ["restaurant", "grocery", "food", "coffee", "cafe", "dining", "pizza",
              "burger", "starbucks", "mcdonald", "chipotle", "whole foods",
              "trader joe", "kroger", "walmart", "target"],

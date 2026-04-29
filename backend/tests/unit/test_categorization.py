@@ -244,6 +244,13 @@ class TestKeywordScorer:
         assert cat == "insurance"
         assert conf > 0.0
 
+    def test_housing_keyword_matches_non_rule_phrasing(self):
+        # Rule tier is tuned for exact phrases like "maintenance charges";
+        # keyword tier should still catch housing intent in varied narration wording.
+        cat, conf = _keyword_scorer("society maintenance bill paid to landlord", amount=-3500.0)
+        assert cat == "housing"
+        assert conf > 0.0
+
 
 # ---------------------------------------------------------------------------
 # detect_recurring
