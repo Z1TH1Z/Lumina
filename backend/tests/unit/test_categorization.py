@@ -208,6 +208,25 @@ class TestClassifyTransaction:
         assert result["category"] == "education"
         assert result["confidence"] == CATEGORIZATION_CONFIDENCE_THRESHOLD
 
+    def test_ml_failure_logs_warning_with_exception_type(self, monkeypatch, caplog):
+        from app.services.ml_service import ml_service
+
+        def fake_predict_category(description, features=None):
+            raise ValueError("shape mismatch")
+
+        monkeypatch.setattr(ml_service, "predict_category", fake_predict_category)
+
+        with caplog.at_level("WARNING", logger="app.services.categorization"):
+            result = classify_transaction(
+                description="xyzzy txn abc",
+                merchant="",
+                amount=0.0,
+            )
+
+        assert result["method"] == "keyword"
+        assert "ValueError" in caplog.text
+        assert "shape mismatch" in caplog.text
+
 
 # ---------------------------------------------------------------------------
 # _keyword_scorer — fallback scorer
