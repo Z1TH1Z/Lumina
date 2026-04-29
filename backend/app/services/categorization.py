@@ -80,8 +80,9 @@ _NARRATION_PREFIXES = re.compile(
     r'^(pos|debit|credit|ach|wire|transfer|atm|neft|imps|upi|rtgs|nach|emi|int|chq|clg)\s*[/\-]?\s*',
     re.IGNORECASE,
 )
-# Remove reference numbers, UPI IDs, long digit strings
-_NOISE_PATTERNS = re.compile(r'\b(\d{6,}|[A-Z0-9]{16,})\b')
+# Remove reference numbers, UPI IDs, long alphanumeric tokens.
+# Note: clean_text/_rule_text lowercase input before applying this regex.
+_NOISE_PATTERNS = re.compile(r'\b(\d{6,}|[a-z0-9]{16,})\b')
 # Keep only letters and spaces after cleaning
 _NON_ALPHA = re.compile(r'[^a-z\s]')
 

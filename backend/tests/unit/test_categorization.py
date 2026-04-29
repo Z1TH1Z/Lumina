@@ -55,6 +55,11 @@ class TestCleanText:
         assert "998877665544" not in result
         assert "swiggy" in result
 
+    def test_removes_long_alphanumeric_tokens(self):
+        result = clean_text("upi ref ABCD1234EFGH5678 swiggy")
+        assert "abcd1234efgh5678" not in result
+        assert "swiggy" in result
+
     def test_lowercases(self):
         result = clean_text("NETFLIX SUBSCRIPTION")
         assert result == result.lower()

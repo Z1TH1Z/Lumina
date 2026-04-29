@@ -259,7 +259,7 @@ _NARRATION_PREFIXES = re.compile(
     r'^(pos|debit|credit|ach|wire|transfer|atm|neft|imps|upi|rtgs|nach|emi|int|chq|clg)\s*[/\-]?\s*',
     re.IGNORECASE,
 )
-_NOISE_PATTERNS = re.compile(r'\b(\d{6,}|[A-Z0-9]{16,})\b')
+_NOISE_PATTERNS = re.compile(r'\b(\d{6,}|[a-z0-9]{16,})\b')
 _NON_ALPHA = re.compile(r'[^a-z\s]')
 
 
