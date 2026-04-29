@@ -233,6 +233,12 @@ class TestKeywordScorer:
         assert cat == "other"
         assert conf == 0.2
 
+    def test_does_not_match_keyword_substrings_inside_words(self):
+        # "car", "bus", and "shop" should not match inside "cardiac", "robust", "bishop"
+        cat, conf = _keyword_scorer("cardiac robust bishop", amount=0.0)
+        assert cat == "other"
+        assert conf == 0.2
+
 
 # ---------------------------------------------------------------------------
 # detect_recurring

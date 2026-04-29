@@ -259,7 +259,7 @@ CATEGORY_KEYWORDS: dict[str, list[str]] = {
 def _keyword_scorer(text: str, amount: float = 0.0) -> tuple[str, float]:
     scores: dict[str, int] = {}
     for category, keywords in CATEGORY_KEYWORDS.items():
-        score = sum(len(kw) for kw in keywords if kw in text)
+        score = sum(len(kw) for kw in keywords if _kw_match(kw, text))
         if score > 0:
             scores[category] = score
 
