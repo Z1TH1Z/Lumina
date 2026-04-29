@@ -223,6 +223,14 @@ def _kw_match(kw: str, text: str) -> bool:
     return bool(re.search(r'\b' + re.escape(kw.strip()) + r'\b', text))
 
 
+def _keyword_score_match(kw: str, text: str) -> bool:
+    """Keyword-tier matcher: keep short tokens strict, but allow longer stems."""
+    kw = kw.strip()
+    if _kw_match(kw, text):
+        return True
+    return len(kw) >= 5 and kw in text
+
+
 def rule_engine(text: str, amount: float = 0.0) -> Optional[tuple[str, float]]:
     """
     Apply deterministic rules. Returns (category, confidence) or None.
@@ -279,7 +287,7 @@ CATEGORY_KEYWORDS: dict[str, list[str]] = {
 def _keyword_scorer(text: str, amount: float = 0.0) -> tuple[str, float]:
     scores: dict[str, int] = {}
     for category, keywords in CATEGORY_KEYWORDS.items():
-        score = sum(len(kw) for kw in keywords if _kw_match(kw, text))
+        score = sum(len(kw) for kw in keywords if _keyword_score_match(kw, text))
         if score > 0:
             scores[category] = score
 
