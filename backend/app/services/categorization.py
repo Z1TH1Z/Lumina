@@ -248,7 +248,12 @@ CATEGORY_KEYWORDS: dict[str, list[str]] = {
                  "nike", "adidas", "best buy", "apple", "costco", "ikea"],
     "income": ["salary", "payroll", "deposit", "income", "dividend", "interest",
                "refund", "cashback"],
-    "transfer": ["transfer", "zelle", "venmo", "paypal", "wire", "ach"],
+    # Keep transfer keywords directional to avoid classifying credits like
+    # "fund transfer received" as transfer instead of income.
+    "transfer": [
+        "transfer to", "upi transfer", "fund transfer to", "money transfer to",
+        "zelle", "venmo", "paypal transfer", "wire transfer", "ach payment", "remittance",
+    ],
     "investment": ["invest", "stock", "etf", "mutual fund", "brokerage",
                    "robinhood", "fidelity", "vanguard", "schwab", "crypto"],
     "insurance": ["insurance", "premium", "geico", "allstate", "state farm",

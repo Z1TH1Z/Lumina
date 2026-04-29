@@ -270,6 +270,16 @@ class TestKeywordScorer:
         assert cat == "housing"
         assert conf > 0.0
 
+    def test_transfer_credit_received_prefers_income(self):
+        cat, conf = _keyword_scorer("fund transfer received", amount=1500.0)
+        assert cat == "income"
+        assert conf == 0.4
+
+    def test_transfer_directional_phrase_still_routes_to_transfer(self):
+        cat, conf = _keyword_scorer("upi transfer to friend", amount=-1500.0)
+        assert cat == "transfer"
+        assert conf > 0.0
+
 
 # ---------------------------------------------------------------------------
 # detect_recurring
