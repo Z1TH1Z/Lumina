@@ -2,9 +2,14 @@
 
 import json
 from functools import lru_cache
+from pathlib import Path
 
 from pydantic import field_validator
 from pydantic_settings import BaseSettings
+
+# Always resolve .env relative to this file (backend/.env) so the path is
+# correct regardless of the process CWD (e.g. when imported from a notebook).
+_ENV_FILE = Path(__file__).parent.parent.parent / ".env"
 
 
 class Settings(BaseSettings):
@@ -78,7 +83,7 @@ class Settings(BaseSettings):
         return value
 
     class Config:
-        env_file = ".env"
+        env_file = str(_ENV_FILE)
         env_file_encoding = "utf-8"
         extra = "ignore"
 

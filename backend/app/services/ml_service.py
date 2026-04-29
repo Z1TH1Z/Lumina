@@ -1,30 +1,62 @@
 """ML service for transaction categorization, anomaly detection, and forecasting."""
 
+import os
 import pickle
-import json
 import logging
 import numpy as np
 from typing import Tuple, List, Dict, Optional
 from decimal import Decimal
 from datetime import datetime
 from pathlib import Path
-from redis.asyncio import Redis
 
-from app.core.config import get_settings
+# app.core.constants has no heavy dependencies — always safe to import.
 from app.core.constants import (
     CATEGORIZATION_CONFIDENCE_THRESHOLD,
     ANOMALY_ZSCORE_THRESHOLD,
     FORECAST_MIN_MONTHS,
 )
-from app.models.transaction import Transaction
-from app.schemas.transaction import Anomaly, Forecast
 
-settings = get_settings()
+# pydantic / SQLAlchemy / aiosqlite are NOT imported at the top level so that
+# ml_service can be loaded from notebook kernels that only have sklearn/numpy.
+# Heavy app imports are deferred inside the methods that need them.
+
 logger = logging.getLogger(__name__)
 
 
-async def get_redis_client() -> Redis:
+def _resolve_model_path() -> Path:
+    """
+    Return the absolute path to categorizer.pkl.
+
+    Priority:
+      1. CATEGORIZER_MODEL_PATH already in os.environ (set by shell or app startup)
+      2. CATEGORIZER_MODEL_PATH in backend/.env  (parsed without pydantic)
+      3. Default: <backend_root>/models/categorizer.pkl
+    """
+    backend_root = Path(__file__).parent.parent.parent
+
+    env_val = os.environ.get("CATEGORIZER_MODEL_PATH", "")
+    if not env_val:
+        # Lightweight .env parse — no pydantic needed
+        env_file = backend_root / ".env"
+        if env_file.exists():
+            for line in env_file.read_text(encoding="utf-8").splitlines():
+                line = line.strip()
+                if line.startswith("CATEGORIZER_MODEL_PATH="):
+                    env_val = line.split("=", 1)[1].strip()
+                    break
+
+    if env_val:
+        p = Path(env_val)
+        return p if p.is_absolute() else backend_root / p
+
+    return backend_root / "models" / "categorizer.pkl"
+
+
+async def get_redis_client():
     """Get Redis client for caching."""
+    from redis.asyncio import Redis
+    from app.core.config import get_settings
+    settings = get_settings()
     return Redis.from_url(settings.REDIS_URL, decode_responses=True)
 
 
@@ -32,9 +64,8 @@ class MLService:
     """Service for ML-based operations."""
 
     def __init__(self):
-        """Initialize ML service."""
         self._categorizer_model = None
-        self._model_path = Path(settings.CATEGORIZER_MODEL_PATH)
+        self._model_path = _resolve_model_path()
 
     def load_categorization_model(self):
         """Load the transaction categorization model."""
@@ -76,7 +107,10 @@ class MLService:
         model_data = self.load_categorization_model()
 
         if model_data is None:
-            return "other", 0.0
+            raise RuntimeError(
+                f"Categorization model not found at {self._model_path}. "
+                "Run: cd backend && python -m app.ml.train_categorizer"
+            )
 
         vectorizer = model_data['vectorizer']
         model = model_data['model']
@@ -111,9 +145,9 @@ class MLService:
 
     def detect_anomalies(
         self,
-        transactions: List[Transaction],
-        user_id: str
-    ) -> List[Anomaly]:
+        transactions,
+        user_id: str,
+    ) -> list:
         """
         Detect anomalies in transactions using Z-score analysis.
 
@@ -124,11 +158,13 @@ class MLService:
         Returns:
             List of detected anomalies
         """
+        from app.schemas.transaction import Anomaly  # deferred to avoid aiosqlite at import
+
         if not transactions:
             return []
 
         anomalies = []
-        
+
         # Group transactions by category
         category_groups = {}
         for tx in transactions:
@@ -172,9 +208,9 @@ class MLService:
 
     def generate_forecast(
         self,
-        transactions: List[Transaction],
-        periods: List[int]
-    ) -> List[Forecast]:
+        transactions,
+        periods: List[int],
+    ) -> list:
         """
         Generate spending forecasts using simple exponential smoothing.
 
@@ -206,6 +242,8 @@ class MLService:
 
         if len(amounts) < FORECAST_MIN_MONTHS:
             raise ValueError(f"Insufficient data: need at least {FORECAST_MIN_MONTHS} months")
+
+        from app.schemas.transaction import Forecast  # deferred to avoid aiosqlite at import
 
         # Simple exponential smoothing
         alpha = 0.3  # Smoothing factor

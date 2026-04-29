@@ -132,6 +132,9 @@ _RULES: list[tuple[list[str], Optional[callable], str]] = [
     (["grocery", "supermarket", "hypermarket", "big bazaar", "dmart",
       "reliance fresh", "more megastore", "nature basket", "spencer"], None, "food"),
     (["ubereats", "doordash", "grubhub"], None, "food"),
+    # Local cafe/eatery names where "cafe" is a prefix inside a compound word
+    (["writers cafe", "writers cafenandamba", "mssbk food", "street bites",
+      "food court"], None, "food"),
 
     # Transport
     (["uber", "ola", "rapido", "meru", "lyft", "taxi", "cab"], None, "transport"),
@@ -142,6 +145,9 @@ _RULES: list[tuple[list[str], Optional[callable], str]] = [
     (["parking", "fastag", "toll"], None, "transport"),
     (["flight", "airline", "indigo", "air india", "spicejet", "vistara",
       "makemytrip", "goibibo", "cleartrip"], None, "transport"),
+    # Local transport operators not covered by generic keywords
+    (["metropolitan transport", "metropolitan transpo", "rhema transport",
+      "city transport"], None, "transport"),
 
     # Utilities
     (["electricity", "bescom", "msedcl", "tata power", "adani electricity",
@@ -157,12 +163,13 @@ _RULES: list[tuple[list[str], Optional[callable], str]] = [
       "apple tv", "twitch"], None, "entertainment"),
     (["movie", "cinema", "pvr", "inox", "bookmyshow", "concert", "gaming",
       "steam", "playstation", "xbox", "epic games"], None, "entertainment"),
+    (["google play", "playstore", "play store", "google india digital"], None, "entertainment"),
 
     # Healthcare
     (["pharmacy", "chemist", "medical store", "apollo pharmacy",
       "medplus", "netmeds", "1mg", "pharmeasy", "healthkart"], None, "healthcare"),
     (["hospital", "clinic", "doctor", "dental", "optometry", "diagnostic",
-      "lab test", "practo", "lybrate"], None, "healthcare"),
+      "diagnostics", "apollo diagnostics", "lab test", "practo", "lybrate"], None, "healthcare"),
 
     # Insurance (life, health, vehicle — all premiums go here)
     (["insurance premium", "life insurance", "mediclaim", "lic",
@@ -181,6 +188,10 @@ _RULES: list[tuple[list[str], Optional[callable], str]] = [
       "croma", "vijay sales", "reliance digital", "best buy"], None, "shopping"),
     (["home depot", "ikea", "pepperfry", "urban ladder", "blinds",
       "furnishing", "decor"], None, "shopping"),
+    # Local Indian retailers seen in HDFC UPI narrations
+    (["naveen stores", "msa naveen", "all maart", "for all maart",
+      "rajalakshmi", "j m stores", "super market", "enzo shop",
+      "headphone zone"], None, "shopping"),
 
     # Investment / Brokerage
     (["zerodha", "groww", "upstox", "kuvera", "coin by zerodha", "fidelity",
@@ -241,7 +252,8 @@ CATEGORY_KEYWORDS: dict[str, list[str]] = {
     "utilities": ["electric", "water", "internet", "phone", "cable", "utility",
                   "power", "verizon", "comcast", "spectrum"],
     "entertainment": ["netflix", "spotify", "hulu", "disney", "movie", "theater",
-                      "gaming", "steam", "concert", "ticket", "youtube", "twitch"],
+                      "gaming", "steam", "concert", "ticket", "youtube", "twitch",
+                      "google play", "playstore"],
     "healthcare": ["doctor", "hospital", "pharmacy", "medical", "dental", "health",
                    "clinic", "cvs", "walgreens", "prescription"],
     "shopping": ["amazon", "ebay", "shop", "store", "mall", "clothing", "fashion",
@@ -373,6 +385,30 @@ def detect_recurring(transactions: list[dict], tolerance: float = 0.05) -> list[
 # 7. Hybrid Pipeline — Main Entry Point
 # ---------------------------------------------------------------------------
 
+# Cache the ml_service singleton at module level so a one-time import failure
+# (e.g. missing pydantic in a notebook kernel) only logs one warning instead
+# of one per transaction.
+_ml_service = None
+_ml_service_ready: bool | None = None  # None = not yet tried
+
+
+def _load_ml_service():
+    """Attempt to import and return ml_service; caches result (success or failure)."""
+    global _ml_service, _ml_service_ready
+    if _ml_service_ready is None:
+        try:
+            from app.services.ml_service import ml_service
+            _ml_service = ml_service
+            _ml_service_ready = True
+        except Exception as e:
+            logger.warning(
+                "ML service unavailable; all transactions will use keyword fallback "
+                "(%s: %s)", type(e).__name__, e,
+            )
+            _ml_service_ready = False
+    return _ml_service if _ml_service_ready else None
+
+
 def classify_transaction(
     description: str,
     merchant: Optional[str] = None,
@@ -403,19 +439,19 @@ def classify_transaction(
     if rule_result:
         return {"category": rule_result[0], "confidence": rule_result[1], "method": "rule"}
 
-    # --- Step 3: ML classifier (lazy import avoids circular deps) ---
-    try:
-        from app.services.ml_service import ml_service
-        features = extract_features(description, merchant, amount, txn_date)
-        cat, conf = ml_service.predict_category(text, features)
-        if conf >= confidence_threshold:
-            return {"category": cat, "confidence": conf, "method": "ml"}
-    except Exception as e:
-        logger.warning(
-            "ML classifier unavailable; falling back to keyword tier (%s: %s)",
-            type(e).__name__,
-            e,
-        )
+    # --- Step 3: ML classifier ---
+    svc = _load_ml_service()
+    if svc is not None:
+        try:
+            features = extract_features(description, merchant, amount, txn_date)
+            cat, conf = svc.predict_category(text, features)
+            if conf >= confidence_threshold:
+                return {"category": cat, "confidence": conf, "method": "ml"}
+        except Exception as e:
+            logger.warning(
+                "ML prediction failed; falling back to keyword tier (%s: %s)",
+                type(e).__name__, e,
+            )
 
     # --- Step 4: keyword scorer ---
     cat, conf = _keyword_scorer(text, amount)
