@@ -239,6 +239,11 @@ class TestKeywordScorer:
         assert cat == "other"
         assert conf == 0.2
 
+    def test_insurance_keyword_routes_to_insurance_not_healthcare(self):
+        cat, conf = _keyword_scorer("insurance renewal", amount=-1200.0)
+        assert cat == "insurance"
+        assert conf > 0.0
+
 
 # ---------------------------------------------------------------------------
 # detect_recurring

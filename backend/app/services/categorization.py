@@ -240,7 +240,7 @@ CATEGORY_KEYWORDS: dict[str, list[str]] = {
     "entertainment": ["netflix", "spotify", "hulu", "disney", "movie", "theater",
                       "gaming", "steam", "concert", "ticket", "youtube", "twitch"],
     "healthcare": ["doctor", "hospital", "pharmacy", "medical", "dental", "health",
-                   "clinic", "cvs", "walgreens", "insurance", "prescription"],
+                   "clinic", "cvs", "walgreens", "prescription"],
     "shopping": ["amazon", "ebay", "shop", "store", "mall", "clothing", "fashion",
                  "nike", "adidas", "best buy", "apple", "costco", "ikea"],
     "income": ["salary", "payroll", "deposit", "income", "dividend", "interest",
